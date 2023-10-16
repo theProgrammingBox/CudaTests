@@ -6,7 +6,7 @@
 
 __global__ void gemm0()
 {
-
+    //
 }
 
 int main()
