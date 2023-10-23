@@ -9,6 +9,4 @@ $(EXECUTABLE): $(SOURCE)
 
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
-
-clean:
 	rm -f $(EXECUTABLE)
