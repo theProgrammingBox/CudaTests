@@ -150,10 +150,10 @@ __global__ void DevGemm1(
 
 int main()
 {
-    const uint32_t widthA = 4;
-    const uint32_t heightA = 3;
-    const uint32_t widthD = 2;
-    const uint32_t batches = 2;
+    const uint32_t widthA = 32;
+    const uint32_t heightA = 32;
+    const uint32_t widthD = 32;
+    const uint32_t batches = 1;
 
     GpuRand rand;
 
@@ -167,16 +167,38 @@ int main()
     rand.Rand(devTensorB, widthD, widthA, widthD, widthD * widthA, batches);
     rand.Rand(devTensorC, widthD, heightA, widthD, widthD * heightA, batches);
 
-    PrintDevTensor(devTensorA, widthA, heightA, widthA, widthA * heightA, batches, "A", false);
-    PrintDevTensor(devTensorB, widthD, widthA, widthD, widthD * widthA, batches, "B", false);
-    PrintDevTensor(devTensorC, widthD, heightA, widthD, widthD * heightA, batches, "C", false);
+    // PrintDevTensor(devTensorA, widthA, heightA, widthA, widthA * heightA, batches, "A", false);
+    // PrintDevTensor(devTensorB, widthD, widthA, widthD, widthD * widthA, batches, "B", false);
+    // PrintDevTensor(devTensorC, widthD, heightA, widthD, widthD * heightA, batches, "C", false);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    cudaEventRecord(start);
+    uint32_t samples = 1000;
+    float milliseconds;
 
-    for (int i = 100; i--;)
+    cudaEventRecord(start);
+    for (int i = samples; i--;)
+    DevGemm0<<<1, widthD * heightA>>>(
+        widthD, heightA, widthA,
+        devTensorA, widthA, widthA * heightA,
+        devTensorB, widthD, widthD * widthA,
+        devTensorC, widthD, widthD * heightA,
+        devTensorD, widthD, widthD * heightA,
+        batches);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(start);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    // PrintDevTensor(devTensorD, widthD, heightA, widthD, widthD * heightA, batches, "D", false);
+
+    printf("Average elapsed time: (%7.6f) s, performance: (%7.1f) GFLOPS.\n",
+        milliseconds * 1e-3 / samples,
+        (2 * widthA * widthD * heightA * batches) * (samples * 1e-6 / milliseconds));
+
+    cudaEventRecord(start);
+    for (int i = samples; i--;)
     DevGemm1<<<1, widthD * heightA>>>(
         widthD, heightA, widthA,
         devTensorA, widthA, widthA * heightA,
@@ -184,20 +206,16 @@ int main()
         devTensorC, widthD, widthD * heightA,
         devTensorD, widthD, widthD * heightA,
         batches);
-
     cudaEventRecord(stop);
+    cudaEventSynchronize(start);
     cudaEventSynchronize(stop);
-    float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    milliseconds /= 10.0f;
 
-    PrintDevTensor(devTensorD, widthD, heightA, widthD, widthD * heightA, batches, "D", false);
+    // PrintDevTensor(devTensorD, widthD, heightA, widthD, widthD * heightA, batches, "D", false);
 
-    printf("Elapsed time: %f ms\n\n", milliseconds);
-
-    // calculate gflops
-    float flops = 2.0f * widthA * widthD * heightA * batches;
-    printf("GFLOPS: %f\n", flops / milliseconds / 1000.0f);
+    printf("Average elapsed time: (%7.6f) s, performance: (%7.1f) GFLOPS.\n",
+        milliseconds * 1e-3 / samples,
+        (2 * widthA * widthD * heightA * batches) * (samples * 1e-6 / milliseconds));
 
     return 0;
 }
