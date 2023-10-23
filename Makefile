@@ -1,12 +1,2 @@
-COMPILER=nvcc
-SOURCE=Source.cu
-EXECUTABLE=a.out
-
-all: $(EXECUTABLE)
-
-$(EXECUTABLE): $(SOURCE)
-	$(COMPILER) $(SOURCE) -o $(EXECUTABLE)
-
-run: $(EXECUTABLE)
-	./$(EXECUTABLE)
-	rm -f $(EXECUTABLE)
+all:
+	nvcc Source.cu -o a.out && ./a.out && rm -f a.out
